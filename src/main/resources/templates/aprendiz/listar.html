@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Aprendices desde API</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .error-message {
+            color: #dc3545;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <h1>Lista de Aprendices</h1>
+
+    <div class="d-flex gap-2 mb-3">
+        <a th:href="@{/aprendices/nuevo}" class="btn btn-primary">Nuevo Aprendiz</a>
+        <button class="btn btn-success" onclick="loadAprendices()">
+            Actualizar Lista
+        </button>
+    </div>
+
+    <!-- Contenedor para mensajes de estado -->
+    <div id="loading" class="loading">Cargando datos desde API...</div>
+    <div id="error-message" class="error-message alert alert-danger" style="display: none;"></div>
+
+    <!-- Tabla para mostrar datos de la API -->
+    <table class="table table-striped" id="aprendices-table" style="display: none;">
+        <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody id="aprendices-data">
+        <!-- Los datos se cargarán aquí dinámicamente -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Cargar aprendices al iniciar la página
+    document.addEventListener('DOMContentLoaded', loadAprendices);
+
+    // Función para cargar los aprendices desde la API
+    async function loadAprendices() {
+        const loadingElement = document.getElementById('loading');
+        const errorElement = document.getElementById('error-message');
+        const tableElement = document.getElementById('aprendices-table');
+        const tbodyElement = document.getElementById('aprendices-data');
+
+        // Mostrar estado de carga
+        loadingElement.style.display = 'block';
+        errorElement.style.display = 'none';
+        tableElement.style.display = 'none';
+
+        try {
+            // Hacer petición a la API
+            const response = await fetch('/api/aprendices');
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
+            const aprendices = await response.json();
+
+            // Limpiar tabla
+            tbodyElement.innerHTML = '';
+
+            // Llenar tabla con datos de la API
+            aprendices.forEach(aprendiz => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${aprendiz.id}</td>
+                    <td>${aprendiz.nombre}</td>
+                    <td>${aprendiz.telefono || 'N/A'}</td>
+                    <td>
+                        <a href="/aprendices/editar/${aprendiz.id}" class="btn btn-warning btn-sm">Editar</a>
+                        <button onclick="confirmDelete(${aprendiz.id}, '${aprendiz.nombre}')"
+                                class="btn btn-danger btn-sm">Eliminar</button>
+                    </td>
+                `;
+                tbodyElement.appendChild(row);
+            });
+
+            // Mostrar tabla y ocultar loading
+            loadingElement.style.display = 'none';
+            tableElement.style.display = 'table';
+
+        } catch (error) {
+            loadingElement.style.display = 'none';
+            errorElement.textContent = `Error al cargar aprendices: ${error.message}`;
+            errorElement.style.display = 'block';
+            console.error('Error:', error);
+        }
+    }
+
+    // Función para confirmar eliminación
+    function confirmDelete(id, nombre) {
+        if (confirm(`¿Estás seguro de eliminar al aprendiz "${nombre}" (ID: ${id})?`)) {
+            deleteAprendiz(id);
+        }
+    }
+
+    // Función para eliminar un aprendiz
+    async function deleteAprendiz(id) {
+        try {
+            const response = await fetch(`/api/aprendices/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
+            // Recargar la lista después de eliminar
+            loadAprendices();
+
+        } catch (error) {
+            document.getElementById('error-message').textContent = `Error al eliminar: ${error.message}`;
+            document.getElementById('error-message').style.display = 'block';
+            console.error('Error:', error);
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>API Consumer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .action-btns { white-space: nowrap; }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <h1>Consumo de API REST</h1>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Listado de Aprendices desde API</h2>
+        </div>
+        <div class="card-body">
+            <button class="btn btn-primary mb-3" onclick="loadAprendices()">
+                Cargar Aprendices
+            </button>
+            <div id="aprendices-container"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadAprendices() {
+        try {
+            const response = await fetch('/api/aprendices');
+            const data = await response.json();
+
+            let html = '<table class="table table-striped"><thead><tr>' +
+                      '<th>ID</th><th>Nombre</th><th>Teléfono</th><th>Acciones</th></tr></thead><tbody>';
+
+            data.forEach(aprendiz => {
+                html += `<tr>
+                    <td>${aprendiz.id}</td>
+                    <td>${aprendiz.nombre}</td>
+                    <td>${aprendiz.telefono || 'N/A'}</td>
+                    <td class="action-btns">
+                        <button class="btn btn-sm btn-warning"
+                                onclick="editAprendiz(${aprendiz.id})">
+                            Editar
+                        </button>
+                        <button class="btn btn-sm btn-danger ms-2"
+                                onclick="deleteAprendiz(${aprendiz.id})">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('aprendices-container').innerHTML = html;
+
+        } catch (error) {
+            document.getElementById('aprendices-container').innerHTML =
+                '<div class="alert alert-danger">Error al cargar datos: ' + error.message + '</div>';
+        }
+    }
+
+    async function editAprendiz(id) {
+        try {
+            const response = await fetch(`/api/aprendices/${id}`);
+            const aprendiz = await response.json();
+
+            // Aquí puedes implementar un formulario de edición
+            alert(`Editando: ${aprendiz.nombre}`);
+
+        } catch (error) {
+            console.error('Error al editar:', error);
+        }
+    }
+
+    async function deleteAprendiz(id) {
+        if (confirm('¿Estás seguro de eliminar este aprendiz?')) {
+            try {
+                await fetch(`/api/aprendices/${id}`, {
+                    method: 'DELETE'
+                });
+                loadAprendices(); // Recargar la lista
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+            }
+        }
+    }
+</script>
+</body>
+</html>
